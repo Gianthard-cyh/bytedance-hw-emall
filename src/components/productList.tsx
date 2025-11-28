@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { StarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./ui/pagination";
 
@@ -9,6 +9,7 @@ type Product = {
   name: string;
   price: number;
   rating: number;
+  image: string;
 };
 
 type SortKey = "price_asc" | "price_desc" | "rating_desc" | "name_asc";
@@ -35,7 +36,13 @@ export default function ProductList() {
             },
           ],
         });
-        if (mounted) setData(result.list as Product[]);
+        if (mounted) {
+          const withImage = (result.list as Omit<Product, "image">[]).map((p) => ({
+            ...p,
+            image: `https://picsum.photos/seed/${p.id}/480/320`,
+          }));
+          setData(withImage as Product[]);
+        }
       } catch {
         if (!mounted) return;
         const fallback: Product[] = Array.from({ length: 100 }).map((_, i) => ({
@@ -43,6 +50,7 @@ export default function ProductList() {
           name: `商品 ${i + 1}`,
           price: Math.floor(Math.random() * 9999) + 1,
           rating: Math.round((Math.random() * 4 + 1) * 10) / 10,
+          image: `https://picsum.photos/seed/${i + 1}/480/320`,
         }));
         setData(fallback);
       }
@@ -127,12 +135,35 @@ export default function ProductList() {
         {visible.map((p) => (
           <li
             key={p.id}
-            className="rounded-xl border bg-background p-4 flex flex-col gap-2"
+            className="rounded-xl border bg-background overflow-hidden flex flex-col"
           >
-            <div className="text-base font-semibold text-foreground">{p.name}</div>
-            <div className="text-sm text-muted-foreground">价格：¥{p.price}</div>
-            <div className="text-sm text-muted-foreground">评分：{p.rating}</div>
-            <Button className="mt-2">加入购物车</Button>
+            <div className="relative h-full">
+              <img
+                src={p.image}
+                alt={p.name}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/40 to-transparent text-white">
+                <div className="text-sm font-medium">{p.name}</div>
+              </div>
+            </div>
+            <div className="p-4 bg-secondary text-secondary-foreground flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xl font-bold">¥{p.price}</div>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className={`size-4 ${i < Math.round(p.rating) ? "text-yellow-500" : "text-muted-foreground"}`}
+                      fill={i < Math.round(p.rating) ? "currentColor" : "none"}
+                    />
+                  ))}
+                  <span className="text-sm opacity-80">{p.rating}</span>
+                </div>
+              </div>
+            </div>
+            <Button className="rounded-none w-full h-12">加入购物车</Button>
           </li>
         ))}
       </ul>
