@@ -1,5 +1,6 @@
 import NavBar from "@/components/navBar";
 import FilterSelecter from "./components/filterSelector";
+import ProductList from "@/components/productList";
 
 const navItems = [
   { title: "首页", path: "/" },
@@ -25,8 +26,9 @@ function App() {
   return (
     <main className="min-h-screen w-full bg-slate-200 flex flex-col">
       <NavBar items={navItems} />
-      <section className="flex-1 flex flex-row">
-        <FilterSelecter classes={classes} priceConfig={priceConfig} className="max-w-[300px]"/>
+      <section className="grid sm:grid-cols-[1fr_2fr] gap-4 p-4">
+        <FilterSelecter classes={classes} priceConfig={priceConfig}/>
+        <ProductList />
       </section>
     </main>
   );

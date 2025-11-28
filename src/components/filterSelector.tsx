@@ -82,7 +82,7 @@ export default function FilterSelecter({
   }
 
   return (
-    <div className={cn("flex-1 flex flex-col bg-slate-100 m-4 p-4 rounded-2xl", className)}>
+    <div className={cn("flex-1 flex flex-col bg-slate-100 mx-4 mt-4 mb-auto p-4 rounded-2xl", className)}>
       <h1 className="text-xl font-bold text-foreground">筛选</h1>
 
       <div className="bg-white w-full rounded-lg flex flex-col p-4 mt-4 gap-2">
