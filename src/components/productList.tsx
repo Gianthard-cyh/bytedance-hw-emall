@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { StarIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Skeleton } from "./ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "./ui/pagination";
+import ProductToolbar from "@/components/product/Toolbar";
+import ProductPager from "@/components/product/Pager";
 
 type Product = {
   id: number;
@@ -17,10 +17,18 @@ type Product = {
 type SortKey = "price_asc" | "price_desc" | "rating_desc" | "name_asc";
 
 function ProductCard({ p }: { p: Product }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
   return (
     <li className="rounded-xl border bg-background overflow-hidden flex flex-col">
-      <div className="relative h-full">
-        <img src={p.image} alt={p.name} loading="lazy" className="w-full h-full object-cover" />
+      <div className="relative aspect-[4/3]">
+        {!imgLoaded && <Skeleton className="absolute inset-0 h-full w-full" />}
+        <img
+          src={p.image}
+          alt={p.name}
+          loading="lazy"
+          onLoad={() => setImgLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity ${imgLoaded ? "opacity-100" : "opacity-0"}`}
+        />
         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/40 to-transparent text-white">
           <div className="text-sm font-medium">{p.name}</div>
         </div>
@@ -42,86 +50,6 @@ function ProductCard({ p }: { p: Product }) {
       </div>
       <Button className="w-full h-12 rounded-none">加入购物车</Button>
     </li>
-  );
-}
-
-function ProductToolbar({
-  sort,
-  onSortChange,
-  pageSize,
-  onPageSizeChange,
-}: {
-  sort: SortKey;
-  onSortChange: (s: SortKey) => void;
-  pageSize: number;
-  onPageSizeChange: (n: number) => void;
-}) {
-  return (
-    <header className="flex flex-wrap items-center gap-3 justify-between bg-slate-100 py-4 px-6 rounded-2xl">
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-muted-foreground">排序</label>
-        <Select value={sort} onValueChange={(value) => onSortChange(value as SortKey)}>
-          <SelectTrigger className="h-9 rounded-md border bg-background px-3 text-sm text-foreground">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="price_asc">价格从低到高</SelectItem>
-            <SelectItem value="price_desc">价格从高到低</SelectItem>
-            <SelectItem value="rating_desc">评分从高到低</SelectItem>
-            <SelectItem value="name_asc">名称A→Z</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-muted-foreground">每页</label>
-        <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value) || 12)}>
-          <SelectTrigger className="h-9 rounded-md border bg-background px-3 text-sm text-foreground">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end">
-            <SelectItem value="8">8</SelectItem>
-            <SelectItem value="12">12</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-            <SelectItem value="32">32</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </header>
-  );
-}
-
-function ProductPager({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (n: number) => void;
-}) {
-  return (
-    <footer className="flex items-center justify-between">
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious onClick={() => onPageChange(currentPage - 1)} />
-          </PaginationItem>
-          {Array.from({ length: totalPages }).map((_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink isActive={i + 1 === currentPage} onClick={() => onPageChange(i + 1)}>
-                {i + 1}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
-          <PaginationItem>
-            {currentPage > 9 && <PaginationEllipsis />}
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext onClick={() => onPageChange(currentPage + 1)} />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </footer>
   );
 }
 
