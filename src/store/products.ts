@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { fetchProductList, type Product } from '@/lib/data'
+import type { CartItem } from '@/store/cart'
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -12,6 +13,7 @@ type ProductsState = {
   filters: { classes: string[]; price?: { min: number; max: number } }
   setFilters: (f: { classes: string[]; price?: { min: number; max: number } }) => void
   clearFilters: () => void
+  applyCheckout: (items: CartItem[]) => { ok: true } | { ok: false; failures: Array<{ pid: number; need: number; left: number }> }
 }
 
 export const useProductsStore = create<ProductsState>((set, get) => ({
@@ -60,6 +62,24 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
   },
   clearFilters() {
     set({ filters: { classes: [] } })
+  },
+  applyCheckout(items) {
+    const prods = get().products
+    const failures: Array<{ pid: number; need: number; left: number }> = []
+    for (const it of items) {
+      const p = prods.find((pp) => pp.id === it.pid)
+      const left = p?.stock ?? 0
+      if (!p || left < it.qty) {
+        failures.push({ pid: it.pid, need: it.qty, left })
+      }
+    }
+    if (failures.length) return { ok: false, failures }
+    const next = prods.map((p) => {
+      const total = items.filter((it) => it.pid === p.id).reduce((sum, it) => sum + it.qty, 0)
+      return total > 0 ? { ...p, stock: Math.max(0, p.stock - total) } : p
+    })
+    set({ products: next })
+    return { ok: true }
   },
 }))
 

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function DetailInfo({
   title,
@@ -15,6 +16,8 @@ export default function DetailInfo({
   onQtyChange,
   onAdd,
   canAdd,
+  remaining,
+  inCartQty,
 }: {
   title: string;
   price: number;
@@ -30,7 +33,20 @@ export default function DetailInfo({
   onQtyChange: (n: number) => void;
   onAdd: () => void;
   canAdd: boolean;
+  remaining?: number;
+  inCartQty?: number;
 }) {
+  const disabledReason = (() => {
+    if (!selectedSize) return "请选择尺码";
+    if (!selectedColor) return "请选择颜色";
+    if (qty <= 0) return "数量必须大于 0";
+    if (typeof remaining === 'number' && qty > remaining) {
+      const cartInfo = typeof inCartQty === 'number' && inCartQty > 0 ? `，购物车已有 ${inCartQty} 件` : "";
+      return `库存不足${cartInfo}，剩余可加入 ${remaining} 件`;
+    }
+    if (stock <= 0) return "无库存";
+    return "";
+  })();
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -40,23 +56,33 @@ export default function DetailInfo({
 
       <div>
         <div className="text-sm text-muted-foreground">尺码</div>
-        <div className="mt-2 flex gap-2">
-          {sizes.map((s) => (
-            <Button key={s} variant={selectedSize === s ? "secondary" : "outline"} onClick={() => onSizeChange(s)}>
-              {s}
-            </Button>
-          ))}
+        <div className="mt-2">
+          <Select value={selectedSize} onValueChange={(v) => onSizeChange(v)}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="请选择尺码" />
+            </SelectTrigger>
+            <SelectContent>
+              {sizes.map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       <div>
         <div className="text-sm text-muted-foreground">颜色</div>
-        <div className="mt-2 flex gap-2">
-          {colors.map((c) => (
-            <Button key={c} variant={selectedColor === c ? "secondary" : "outline"} onClick={() => onColorChange(c)}>
-              {c}
-            </Button>
-          ))}
+        <div className="mt-2">
+          <Select value={selectedColor} onValueChange={(v) => onColorChange(v)}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="请选择颜色" />
+            </SelectTrigger>
+            <SelectContent>
+              {colors.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -74,9 +100,16 @@ export default function DetailInfo({
           onChange={(e) => onQtyChange(Math.max(1, Number(e.target.value) || 1))}
           className="h-10 w-24 rounded-md border bg-background px-3 text-sm"
         />
-        <Button disabled={!canAdd} className="flex-1 h-10" onClick={onAdd}>
-          加入购物车
-        </Button>
+        {canAdd ? (
+          <Button className="flex-1 h-10" onClick={onAdd}>
+            加入购物车
+          </Button>
+        ) : (
+          <div className="flex-1 grid gap-1">
+            <Button disabled className="h-10 w-full">加入购物车</Button>
+            <div className="text-xs text-muted-foreground">{disabledReason || "不可加入"}</div>
+          </div>
+        )}
       </div>
 
       <div>
@@ -86,4 +119,3 @@ export default function DetailInfo({
     </div>
   );
 }
-

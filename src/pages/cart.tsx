@@ -4,6 +4,7 @@ import { useProductsStore } from "@/store/products";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -12,6 +13,8 @@ export default function CartPage() {
   const updateQty = useCartStore((s) => s.updateQty);
   const clearCart = useCartStore((s) => s.clearCart);
   const getProductById = useProductsStore((s) => s.getProductById);
+  const applyCheckout = useProductsStore((s) => s.applyCheckout);
+  // feedback via sonner
 
   const total = useMemo(() => {
     return cart.reduce((sum, it) => {
@@ -21,9 +24,25 @@ export default function CartPage() {
     }, 0);
   }, [cart, getProductById]);
 
+  function checkout() {
+    if (cart.length === 0) return;
+    const res = applyCheckout(cart);
+    if (res.ok) {
+      clearCart();
+      toast.success("结算成功，库存已更新");
+    } else {
+      const msg = res.failures.map((f) => {
+        const p = getProductById(f.pid);
+        return `${p?.name ?? `商品 ${f.pid}`}: 需${f.need} 剩${f.left}`;
+      }).join("；");
+      toast.error("库存不足", { description: msg });
+    }
+  }
+
   return (
     <section className="p-4 grid gap-4">
       <h2 className="text-xl font-bold">购物车</h2>
+      {/* feedback via sonner toasts */}
       {cart.length === 0 && (
         <div className="grid place-items-center rounded-2xl border py-16">
           <div className="flex flex-col items-center gap-4">
@@ -64,12 +83,12 @@ export default function CartPage() {
           })}
         </ul>
       )}
-      <footer className="flex items-center justify-between mt-2">
+      <footer className="flex items中心 justify-between mt-2">
         <div className="text-lg">总计：<span className="font-bold">¥{total}</span></div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => navigate("/")}>继续购物</Button>
           <Button variant="destructive" onClick={() => clearCart()}>清空</Button>
-          <Button>结算</Button>
+          <Button disabled={cart.length === 0} onClick={checkout}>结算</Button>
         </div>
       </footer>
     </section>
