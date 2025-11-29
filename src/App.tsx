@@ -1,6 +1,7 @@
 import NavBar from "@/components/navBar";
 import FilterSelecter from "./components/filterSelector";
 import ProductList from "@/components/productList";
+import ProductDetailPage from "@/pages/productDetail";
 
 const navItems = [
   { title: "首页", path: "/" },
@@ -23,6 +24,15 @@ const priceConfig = {
 }
 
 function App() {
+  const path = typeof window !== "undefined" ? window.location.pathname : "/";
+  if (/^\/product\/\d+$/.test(path)) {
+    return (
+      <main className="min-h-screen w-full bg-slate-200 flex flex-col">
+        <NavBar items={navItems} />
+        <ProductDetailPage />
+      </main>
+    );
+  }
   return (
     <main className="min-h-screen w-full bg-slate-200 flex flex-col">
       <NavBar items={navItems} />

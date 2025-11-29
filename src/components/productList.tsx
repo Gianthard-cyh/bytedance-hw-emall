@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { StarIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Skeleton } from "./ui/skeleton";
 import ProductToolbar from "@/components/product/Toolbar";
 import ProductPager from "@/components/product/Pager";
+import ProductCard from "@/components/product/Card";
 
 type Product = {
   id: number;
@@ -15,43 +14,6 @@ type Product = {
 };
 
 type SortKey = "price_asc" | "price_desc" | "rating_desc" | "name_asc";
-
-function ProductCard({ p }: { p: Product }) {
-  const [imgLoaded, setImgLoaded] = useState(false);
-  return (
-    <li className="rounded-xl border bg-background overflow-hidden flex flex-col">
-      <div className="relative aspect-[4/3]">
-        {!imgLoaded && <Skeleton className="absolute inset-0 h-full w-full" />}
-        <img
-          src={p.image}
-          alt={p.name}
-          loading="lazy"
-          onLoad={() => setImgLoaded(true)}
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-        />
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/40 to-transparent text-white">
-          <div className="text-sm font-medium">{p.name}</div>
-        </div>
-      </div>
-      <div className="p-4 bg-secondary text-secondary-foreground flex flex-col gap-3 h-full">
-        <div className="flex items-center justify-between">
-          <div className="text-xl font-bold">¥{p.price}</div>
-          <div className="flex items-center gap-1">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <StarIcon
-                key={i}
-                className={`size-4 ${i < Math.round(p.rating) ? "text-yellow-500" : "text-muted-foreground"}`}
-                fill={i < Math.round(p.rating) ? "currentColor" : "none"}
-              />
-            ))}
-            <span className="text-sm opacity-80">{p.rating}</span>
-          </div>
-        </div>
-      </div>
-      <Button className="w-full h-12 rounded-none">加入购物车</Button>
-    </li>
-  );
-}
 
 export default function ProductList() {
   const [data, setData] = useState<Product[]>([]);
@@ -118,6 +80,30 @@ export default function ProductList() {
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const visible = sorted.slice(start, start + pageSize);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const items = Array.from(list.querySelectorAll<HTMLLIElement>("li"));
+    const handlers: Array<(e: Event) => void> = [];
+    items.forEach((li, idx) => {
+      const handler = (e: Event) => {
+        const t = e.target as HTMLElement | null;
+        if (t && (t.closest("button") || t.closest("a"))) return;
+        const pid = visible[idx]?.id;
+        if (pid) window.location.href = `/product/${pid}`;
+      };
+      handlers.push(handler);
+      li.classList.add("cursor-pointer");
+      li.addEventListener("click", handler);
+    });
+    return () => {
+      items.forEach((li, idx) => {
+        const h = handlers[idx];
+        if (h) li.removeEventListener("click", h);
+      });
+    };
+  }, [visible]);
 
   function changePage(next: number) {
     setPage(Math.max(1, Math.min(totalPages, next)));
@@ -157,7 +143,7 @@ export default function ProductList() {
       )}
 
       {status === "ready" && (
-        <ul className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <ul ref={listRef} className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {visible.map((p) => (
             <ProductCard key={p.id} p={p} />
           ))}
