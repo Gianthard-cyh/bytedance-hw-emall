@@ -1,47 +1,84 @@
-# 字节跳动前端训练营作业2 - 购物商城
-- 使用React作为前端框架
-- 使用Vite + Rolldown作为打包器
-- TailwindCSS作为原子化CSS框架
-- 采用 shadcn-ui 作为组件库，兼具丰富组件与高度可定制性，灵活度优于传统方案。
+# 字节跳动前端训练营作业2 - 购物商城（详述）
 
-- 开发过程中发现分类选择器的项目中，每个分类项的逻辑是内聚的，可以将其封装为一个组件，提高代码的可维护性和可复用性。
-- 在开发商品列表时，发现商品卡片的图片加载是一个异步操作，为了避免图片加载时页面闪烁的问题，在图片加载过程中显示骨架，防止页面布局跳变
+本次作业以电商商品展示与购物车为核心，围绕“路由导航、筛选、详情交互、购物车与结算反馈、数据一致性”进行搭建与迭代。下面从架构、实现步骤、关键决策与质量验证进行完整叙述。
+
+## 技术栈
+- 前端框架：React
+- 构建工具：Vite（Rolldown）
+- 样式：TailwindCSS
+- 组件库：shadcn-ui（Select、Sonner Toaster、Radix 系组件）
+- 状态管理：Zustand
+- 路由管理：React Router
 
 ## 项目结构
-- `src/App.tsx`：应用入口，基于 `window.location.pathname` 的简易路由切换列表与详情页。
-- `src/pages/productDetail.tsx`：商品详情页视图与交互。
-- `src/components/`：UI 组件与业务组件
-  - `components/product/`：商品相关组件（卡片、分页、工具栏、详情模块）
-  - `components/ui/`：基础 UI 组件与其样式变体（按 shadcn-ui 组织）
-- `src/lib/utils.ts`：通用工具函数（例如 `cn`、`getProductIdFromPath`）。
-- `src/lib/data.ts`：数据层（Mock 数据统一出口：`fetchProductList`、`fetchProductDetail`）。
-- `src/types/`：类型声明文件（例如 `mockjs.d.ts`）。
+- `src/App.tsx`：应用框架与路由配置
+  - 路由：`/` 与 `/products`（合并为同一页面）、`/product/:id`、`/cart`
+- `src/pages/products.tsx`：商品页面（筛选 + 列表）
+- `src/pages/productDetail.tsx`：详情页面（画廊、信息、推荐、加入购物车）
+- `src/pages/cart.tsx`：购物车页面（列表、总计、结算与反馈）
+- `src/components/`：组件
+  - `components/product/`：`Card`、`Toolbar`、`Pager`、`DetailGallery`、`DetailInfo`、`DetailRecommendations`
+  - `components/ui/`：按 shadcn-ui 的组织方式（`button`、`select`、`sonner`、`tooltip` 等）
+- `src/store/products.ts`：商品状态（列表、筛选、推荐、结算减库存）
+- `src/store/cart.ts`：购物车状态（增删改清）
+- `src/lib/data.ts`：数据层（统一 `Product` 结构，包含详情字段）
+- `src/lib/utils.ts`：工具（`cn`、类别规范化 `normalizeCategoryId` 等）
 
-## 重要改动与优化
-- 移除列表与推荐区的 DOM 事件绑定，改为组件级 `onClick` 回调，更符合 React 思路：
-  - 列表点击逻辑改为在 `ProductCard` 上直接处理，避免 `useEffect` 中手动查询与清理事件。
-  - 参考位置：`src/components/productList.tsx:146`、`src/components/product/DetailRecommendations.tsx:36`。
-- 抽取公共逻辑：
-  - `getProductIdFromPath` 移至 `src/lib/utils.ts`，供详情页与其它模块复用（`src/pages/productDetail.tsx:2`）。
-  - 统一 Mock 数据到 `src/lib/data.ts`，将列表与详情的生成逻辑集中管理，减少重复与耦合（`src/components/productList.tsx:19`、`src/pages/productDetail.tsx:7`）。
-- 纯渲染约束：
-  - 避免在渲染期间调用 `Math.random`，推荐区使用根据 `id` 与索引的确定性公式生成评分与价格（`src/pages/productDetail.tsx:112`）。
-- Fast Refresh 规则落实：
-  - 将 `buttonVariants`、`navigationMenuTriggerStyle` 从组件文件中拆分到独立的 `*-variants.ts`，确保组件文件只导出组件，提升热更新稳定性（`src/components/ui/button-variants.ts`、`src/components/ui/navigation-menu-variants.ts`）。
+## 数据模型统一（核心）
+- 统一使用 `Product` 结构，包含列表必要字段与详情字段：
+  - `id`、`name`、`price`、`rating`、`image`、`category`
+  - `images`、`colors`、`sizes`、`stock`、`desc`
+- 列表与详情、推荐均基于同一结构，避免 `Product` 与 `ProductDetail` 割裂导致重复映射与不一致。
+- 位置：`src/lib/data.ts:1`
 
-## 代码约定
-- 组件文件只导出组件；样式变体（cva）放到 `*-variants.ts`。
-- 事件处理优先使用组件 props（如 `onClick`），避免直接操作 DOM。
-- 列表与分页：排序与分页逻辑在列表组件内以 `useMemo` 和局部状态管理。
-- 数据层：统一通过 `src/lib/data.ts` 暴露方法，类型通过泛型声明，避免 `any`。
-- 路由：简化为 `location.pathname` 解析，不引入路由库，保持作业场景清晰可控。
+## 路由与导航
+- 使用 React Router 管理路由与导航：
+  - `BrowserRouter` 在根挂载：`src/main.tsx:9`
+  - 路由配置：`src/App.tsx:20`（`/` 与 `/products` 同指向 `ProductsPage`）；详情与购物车对应独立页面
+- 导航栏使用 `Link`：`src/components/navBar.tsx:25`
 
-## 开发与质量
+## 筛选系统
+- 左侧筛选器（类别 + 价格区间）与商品列表联动：
+  - 全局筛选状态：`src/store/products.ts:12`（`filters`、`setFilters`、`clearFilters`）
+  - 列表应用筛选：`src/components/productList.tsx:28`
+  - 类别规范化：`src/lib/utils.ts:12`（支持中英文键）
+- 类别项不再包含“全部”，当未选择类别时自然展示全部；勾选多个类别为并集过滤。
+
+## 详情页交互
+- 规格选择：使用 `Select` 组件重构“尺码”“颜色”，交互更清晰：`src/components/product/DetailInfo.tsx:56`、`:72`
+- 数量输入：输入框控制，始终为正数：`src/components/product/DetailInfo.tsx:91`
+- 加入购物车：
+  - 成功使用 Sonner toast 反馈，并提供“去购物车”快捷入口：`src/pages/productDetail.tsx:87`
+  - 成功后重置数量为 1：`src/pages/productDetail.tsx:86`
+  - 按钮禁用规则：当购物车已有数量 + 当前选择数量 > 库存时禁用：`src/pages/productDetail.tsx:47`
+  - 禁用原因直接文字展示（如未选尺码/颜色、库存不足等）：`src/components/product/DetailInfo.tsx:100`
+  - 当库存不足时的文案包含“购物车已有 X 件”：`src/components/product/DetailInfo.tsx:41`
+
+## 购物车与结算
+- 购物车页面：列表项展示图片、名称、单价、规格与数量，可调整或移除：`src/pages/cart.tsx:41`
+- 空状态美化：图标 + 文案 + CTA：`src/pages/cart.tsx:27`
+- 结算模拟：
+  - 校验库存并批量扣减，成功清空购物车并 toast 提示：`src/store/products.ts:28`、`src/pages/cart.tsx:63`
+  - 库存不足时 toast 提示不足项摘要：`src/pages/cart.tsx:66`
+
+## 关键决策与权衡
+- 路由集成：用 React Router 替换手写 `window.location` 导航，获得历史管理与更可控的路由结构。
+- 数据一致性：统一 `Product` 结构，使得渲染期间不需要派生详情；推荐数据也使用同一结构。
+- 交互反馈：采用 Sonner toast，提供轻量、可操作的反馈；避免模态打断流程。
+- 筛选语义：移除“全部”后，空选择即“全部”，避免与其它项的冲突逻辑。
+- 组件化约束：样式变体与组件分离，组件文件仅导出组件，保持热更新稳定。
+
+## 运行与质量
 - 启动开发：`pnpm dev`
 - 构建产物：`pnpm build`（包含 TypeScript 类型检查）
 - 代码检查：`pnpm lint`
+- 预览：`pnpm preview`
 
-## 后续可演进方向
-- 引入路由（如 React Router），替换 `window.location.href` 导航，支持历史与更复杂的路径。
-- 将 Mock 数据替换为真实 API，并在 `src/lib/data.ts` 中加入缓存与错误处理策略。
-- 增加单元测试（例如组件渲染与交互测试），确保重构后行为稳定。
+## 可继续演进的方向
+- 将数据源替换为真实 API，并在 `store/products` 层加入缓存与错误处理策略。
+- 类别筛选改为单选或 URL 同步（`?cat=phone&min=100&max=1000`），支持刷新状态恢复。
+- 推荐区展示更多维度（销量、评价），并支持一键加入购物车。
+- 加入单元测试与端到端测试，确保筛选、加入购物车、结算的核心流程稳定。
+
+---
+本次作业完成了路由、筛选、数据模型统一、购物车与结算反馈的闭环，实现了较完整的用户路径与交互体验，并通过统一的数据结构与状态管理提升可维护性与扩展性。
