@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import DetailGallery from "@/components/product/DetailGallery";
 import DetailInfo from "@/components/product/DetailInfo";
 import DetailRecommendations from "@/components/product/DetailRecommendations";
-import { deriveProductDetail, type ProductDetail } from "@/lib/data";
+import type { Product } from "@/lib/data";
 import { useProductsStore } from "@/store/products";
 import { useCartStore } from "@/store/cart";
 
@@ -30,8 +30,7 @@ export default function ProductDetailPage() {
 
   const params = useParams();
   const id = useMemo(() => Number(params.id ?? 0), [params.id]);
-  const base = products.find((p) => p.id === id);
-  const data: ProductDetail | null = productsStatus === "ready" ? deriveProductDetail(id, base) : null;
+  const data: Product | null = productsStatus === "ready" ? products.find((p) => p.id === id) ?? null : null;
 
   const status: "loading" | "ready" = productsStatus !== "ready" || !data ? "loading" : "ready";
 
@@ -59,7 +58,7 @@ export default function ProductDetailPage() {
           )}
           {status === "ready" && data && (
             <DetailInfo
-              title={data.title}
+              title={data.name}
               price={data.price}
               sizes={data.sizes}
               colors={data.colors}

@@ -3,6 +3,7 @@ import { useCartStore } from "@/store/cart";
 import { useProductsStore } from "@/store/products";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { ShoppingCart } from "lucide-react";
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -23,7 +24,19 @@ export default function CartPage() {
   return (
     <section className="p-4 grid gap-4">
       <h2 className="text-xl font-bold">购物车</h2>
-      {cart.length === 0 && <div className="text-muted-foreground">购物车为空</div>}
+      {cart.length === 0 && (
+        <div className="grid place-items-center rounded-2xl border py-16">
+          <div className="flex flex-col items-center gap-4">
+            <div className="rounded-full bg-slate-100 p-6">
+              <ShoppingCart className="size-12 text-slate-400" />
+            </div>
+            <div className="text-xl font-semibold">购物车空空如也</div>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate('/products')}>去商品页逛逛</Button>
+            </div>
+          </div>
+        </div>
+      )}
       {cart.length > 0 && (
         <ul className="grid gap-3">
           {cart.map((it, idx) => {

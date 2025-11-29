@@ -1,16 +1,13 @@
 import NavBar from "@/components/navBar";
-import FilterSelecter from "./components/filterSelector";
-import ProductList from "@/components/productList";
 import ProductDetailPage from "@/pages/productDetail";
 import CartPage from "@/pages/cart";
 import { Routes, Route } from "react-router-dom";
+import { useProductsStore } from "@/store/products";
+import ProductsPage from "./pages/products";
 
 const navItems = [
-  { title: "首页", path: "/" },
   { title: "商品", path: "/products" },
   { title: "购物车", path: "/cart" },
-  { title: "订单", path: "/orders" },
-  { title: "我的", path: "/profile" }
 ];
 
 const classes = [
@@ -26,25 +23,14 @@ const priceConfig = {
 }
 
 function App() {
+  const setFilters = useProductsStore((s) => s.setFilters);
+  const clearFilters = useProductsStore((s) => s.clearFilters);
   return (
     <main className="min-h-screen w-full bg-slate-200 flex flex-col">
       <NavBar items={navItems} />
       <Routes>
-        <Route
-          path="/"
-          element={
-            <section className="grid sm:grid-cols-[1fr_2fr] gap-4 p-4">
-              <FilterSelecter classes={classes} priceConfig={priceConfig} />
-              <ProductList />
-            </section>
-          }
-        />
-        <Route path="/products" element={
-          <section className="grid sm:grid-cols-[1fr_2fr] gap-4 p-4">
-            <FilterSelecter classes={classes} priceConfig={priceConfig} />
-            <ProductList />
-          </section>
-        } />
+        <Route path="/" element={<ProductsPage classes={classes} priceConfig={priceConfig} onApply={setFilters} onReset={clearFilters} />} />
+        <Route path="/products" element={<ProductsPage classes={classes} priceConfig={priceConfig} onApply={setFilters} onReset={clearFilters} />} />
         <Route path="/product/:id" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
       </Routes>

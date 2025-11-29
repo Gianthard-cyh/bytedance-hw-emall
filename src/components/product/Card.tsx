@@ -13,7 +13,7 @@ export default function ProductCard({ p, onClick }: { p: Product; onClick?: (id:
       <div className="relative aspect-[4/3]">
         {!imgLoaded && <Skeleton className="absolute inset-0 h-full w-full" />}
         <img
-          src={p.image}
+          src={p.images[0]}
           alt={p.name}
           loading="lazy"
           onLoad={() => setImgLoaded(true)}

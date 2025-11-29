@@ -6,6 +6,7 @@ import ProductToolbar from "@/components/product/Toolbar";
 import ProductPager from "@/components/product/Pager";
 import ProductCard from "@/components/product/Card";
 import { useProductsStore } from "@/store/products";
+import { normalizeCategoryId } from "@/lib/utils";
 
 type SortKey = "price_asc" | "price_desc" | "rating_desc" | "name_asc";
 
@@ -14,6 +15,7 @@ export default function ProductList() {
   const products = useProductsStore((s) => s.products);
   const productsStatus = useProductsStore((s) => s.status);
   const loadProducts = useProductsStore((s) => s.loadProducts);
+  const filters = useProductsStore((s) => s.filters);
   const [sort, setSort] = useState<SortKey>("price_asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
@@ -26,22 +28,34 @@ export default function ProductList() {
 
   const sorted = useMemo(() => {
     const arr = [...products];
+    // apply filters
+    const selectedCats = (filters.classes || [])
+      .map((id) => normalizeCategoryId(id))
+      .filter((x): x is NonNullable<typeof x> => !!x)
+    const hasClassFilter = selectedCats.length > 0
+    const [min, max] = [filters.price?.min ?? 0, filters.price?.max ?? Number.POSITIVE_INFINITY]
+    const filtered = arr.filter((p) => {
+      const catOk = !hasClassFilter || selectedCats.includes(p.category)
+      const priceOk = p.price >= min && p.price <= max
+      return catOk && priceOk
+    })
+    const out = [...filtered]
     switch (sort) {
       case "price_asc":
-        arr.sort((a, b) => a.price - b.price);
+        out.sort((a, b) => a.price - b.price);
         break;
       case "price_desc":
-        arr.sort((a, b) => b.price - a.price);
+        out.sort((a, b) => b.price - a.price);
         break;
       case "rating_desc":
-        arr.sort((a, b) => b.rating - a.rating);
+        out.sort((a, b) => b.rating - a.rating);
         break;
       case "name_asc":
-        arr.sort((a, b) => a.name.localeCompare(b.name));
+        out.sort((a, b) => a.name.localeCompare(b.name));
         break;
     }
-    return arr;
-  }, [products, sort]);
+    return out;
+  }, [products, sort, filters]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
