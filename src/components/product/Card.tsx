@@ -2,19 +2,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StarIcon } from "lucide-react";
+import type { Product } from "@/lib/data";
 
-export type ProductCardData = {
-  id: number;
-  name: string;
-  price: number;
-  rating: number;
-  image: string;
-};
-
-export default function ProductCard({ p }: { p: ProductCardData }) {
+export default function ProductCard({ p, onClick }: { p: Product; onClick?: (id: number) => void }) {
   const [imgLoaded, setImgLoaded] = useState(false);
   return (
-    <li className="rounded-xl border bg-background overflow-hidden flex flex-col">
+    <li
+      className="rounded-xl border bg-background overflow-hidden flex flex-col cursor-pointer"
+      onClick={() => onClick?.(p.id)}
+    >
       <div className="relative aspect-[4/3]">
         {!imgLoaded && <Skeleton className="absolute inset-0 h-full w-full" />}
         <img
@@ -43,8 +39,14 @@ export default function ProductCard({ p }: { p: ProductCardData }) {
           </div>
         </div>
       </div>
-      <Button className="w-full h-12 rounded-none">加入购物车</Button>
+      <Button
+        className="w-full h-12 rounded-none"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        加入购物车
+      </Button>
     </li>
   );
 }
-

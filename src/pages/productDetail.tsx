@@ -1,28 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getProductIdFromPath } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import DetailGallery from "@/components/product/DetailGallery";
 import DetailInfo from "@/components/product/DetailInfo";
 import DetailRecommendations from "@/components/product/DetailRecommendations";
+import { fetchProductDetail, type ProductDetail } from "@/lib/data";
 
-type ProductDetail = {
-  id: number;
-  title: string;
-  price: number;
-  images: string[];
-  colors: string[];
-  sizes: string[];
-  stock: number;
-  desc: string;
-};
+// ProductDetail type moved to lib/data
 
-function parseIdFromPath() {
-  const m = window.location.pathname.match(/\/product\/(\d+)/);
-  return m ? Number(m[1]) : 1;
-}
+// id parsing moved to utils
 
 export default function ProductDetailPage() {
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready">("loading");
   const [data, setData] = useState<ProductDetail | null>(null);
   const [activeImg, setActiveImg] = useState(0);
   const [size, setSize] = useState<string>("");
@@ -34,27 +23,14 @@ export default function ProductDetailPage() {
     (async () => {
       setStatus("loading");
       try {
-        const id = parseIdFromPath();
-        const mod: any = await import("mockjs");
-        const Mock = mod.default ?? mod;
-        const result = Mock.mock({
-          id,
-          title: "@ctitle(5,12)",
-          price: "@integer(99, 2999)",
-          "images|5": [
-            () => `https://picsum.photos/seed/${id}-${Math.random().toString(36).slice(2)}/800/600`,
-          ],
-          colors: ["黑色", "蓝色", "红色"],
-          sizes: ["S", "M", "L", "XL"],
-          stock: "@integer(0, 100)",
-          desc: "@cparagraph(1,3)",
-        });
+        const id = getProductIdFromPath();
+        const result = await fetchProductDetail(id);
         if (!mounted) return;
-        setData(result as ProductDetail);
+        setData(result);
         setStatus("ready");
       } catch {
         if (!mounted) return;
-        const id = parseIdFromPath();
+        const id = getProductIdFromPath();
         setData({
           id,
           title: `商品标题 ${id}`,
@@ -79,13 +55,6 @@ export default function ProductDetailPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {status === "error" && (
-        <Alert variant="destructive">
-          <AlertTitle>加载失败</AlertTitle>
-          <AlertDescription>无法获取商品详情，请稍后重试。</AlertDescription>
-        </Alert>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-2xl border bg-background p-4">
           {status === "loading" && <Skeleton className="w-full aspect-[4/3]" />}
@@ -134,13 +103,18 @@ export default function ProductDetailPage() {
         )}
         {status === "ready" && data && (
           <DetailRecommendations
-            items={Array.from({ length: 6 }).map((_, i) => ({
-              id: data.id + i + 1,
-              name: `推荐商品 ${i + 1}`,
-              price: Math.floor(Math.random() * 2000) + 99,
-              rating: Math.round((Math.random() * 4 + 1) * 10) / 10,
-              image: `https://picsum.photos/seed/${data.id}-rec-${i}/480/360`,
-            }))}
+            items={Array.from({ length: 6 }).map((_, i) => {
+              const base = data.id * 97 + i * 31
+              const price = (base % 2000) + 99
+              const rating = Math.round(((base % 40) / 10 + 1) * 10) / 10
+              return {
+                id: data.id + i + 1,
+                name: `推荐商品 ${i + 1}`,
+                price,
+                rating,
+                image: `https://picsum.photos/seed/${data.id}-rec-${i}/480/360`,
+              }
+            })}
           />
         )}
       </div>

@@ -1,17 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Skeleton } from "./ui/skeleton";
 import ProductToolbar from "@/components/product/Toolbar";
 import ProductPager from "@/components/product/Pager";
 import ProductCard from "@/components/product/Card";
-
-type Product = {
-  id: number;
-  name: string;
-  price: number;
-  rating: number;
-  image: string;
-};
+import { fetchProductList, type Product } from "@/lib/data";
 
 type SortKey = "price_asc" | "price_desc" | "rating_desc" | "name_asc";
 
@@ -27,26 +20,10 @@ export default function ProductList() {
     (async () => {
       setStatus("loading");
       try {
-        const mod: any = await import("mockjs");
-        const Mock = mod.default ?? mod;
-        const result = Mock.mock({
-          "list|100": [
-            {
-              "id|+1": 1,
-              name: "@ctitle(5,10)",
-              price: "@integer(1, 9999)",
-              rating: "@float(1, 5, 1, 1)",
-            },
-          ],
-        });
-        if (mounted) {
-          const withImage = (result.list as Omit<Product, "image">[]).map((p) => ({
-            ...p,
-            image: `https://picsum.photos/seed/${p.id}/480/320`,
-          }));
-          setData(withImage as Product[]);
-          setStatus("ready");
-        }
+        const list = await fetchProductList();
+        if (!mounted) return;
+        setData(list);
+        setStatus("ready");
       } catch {
         if (!mounted) return;
         setStatus("error");
@@ -80,30 +57,9 @@ export default function ProductList() {
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const visible = sorted.slice(start, start + pageSize);
-  const listRef = useRef<HTMLUListElement | null>(null);
-  useEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const items = Array.from(list.querySelectorAll<HTMLLIElement>("li"));
-    const handlers: Array<(e: Event) => void> = [];
-    items.forEach((li, idx) => {
-      const handler = (e: Event) => {
-        const t = e.target as HTMLElement | null;
-        if (t && (t.closest("button") || t.closest("a"))) return;
-        const pid = visible[idx]?.id;
-        if (pid) window.location.href = `/product/${pid}`;
-      };
-      handlers.push(handler);
-      li.classList.add("cursor-pointer");
-      li.addEventListener("click", handler);
-    });
-    return () => {
-      items.forEach((li, idx) => {
-        const h = handlers[idx];
-        if (h) li.removeEventListener("click", h);
-      });
-    };
-  }, [visible]);
+  const handleCardClick = useCallback((id: number) => {
+    window.location.href = `/product/${id}`;
+  }, []);
 
   function changePage(next: number) {
     setPage(Math.max(1, Math.min(totalPages, next)));
@@ -143,9 +99,9 @@ export default function ProductList() {
       )}
 
       {status === "ready" && (
-        <ul ref={listRef} className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {visible.map((p) => (
-            <ProductCard key={p.id} p={p} />
+            <ProductCard key={p.id} p={p} onClick={handleCardClick} />
           ))}
         </ul>
       )}
