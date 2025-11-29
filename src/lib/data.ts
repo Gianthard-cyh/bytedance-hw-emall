@@ -49,3 +49,27 @@ export async function fetchProductDetail(id: number): Promise<ProductDetail> {
   })
   return result
 }
+
+export function deriveProductDetailFromProduct(product: Product): ProductDetail {
+  const id = product.id
+  const images = Array.from({ length: 5 }).map((_, i) => `https://picsum.photos/seed/${id}-${i}/800/600`)
+  const stock = (id * 13) % 100
+  const desc = `商品 ${id} 的详细介绍。名称：${product.name}。`
+  return {
+    id,
+    title: product.name,
+    price: product.price,
+    images,
+    colors: ['黑色', '蓝色', '红色'],
+    sizes: ['S', 'M', 'L', 'XL'],
+    stock,
+    desc,
+  }
+}
+
+export function deriveProductDetail(id: number, base?: Product): ProductDetail {
+  if (base) return deriveProductDetailFromProduct(base)
+  const price = ((id * 97) % 2900) + 99
+  const name = `商品标题 ${id}`
+  return deriveProductDetailFromProduct({ id, name, price, rating: ((id * 23) % 50) / 10 + 0.5, image: `https://picsum.photos/seed/${id}/480/320` })
+}

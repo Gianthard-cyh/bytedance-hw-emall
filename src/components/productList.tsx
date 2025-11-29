@@ -1,41 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Skeleton } from "./ui/skeleton";
 import ProductToolbar from "@/components/product/Toolbar";
 import ProductPager from "@/components/product/Pager";
 import ProductCard from "@/components/product/Card";
-import { fetchProductList, type Product } from "@/lib/data";
+import { useProductsStore } from "@/store/products";
 
 type SortKey = "price_asc" | "price_desc" | "rating_desc" | "name_asc";
 
 export default function ProductList() {
-  const [data, setData] = useState<Product[]>([]);
+  const navigate = useNavigate();
+  const products = useProductsStore((s) => s.products);
+  const productsStatus = useProductsStore((s) => s.status);
+  const loadProducts = useProductsStore((s) => s.loadProducts);
   const [sort, setSort] = useState<SortKey>("price_asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const status: "loading" | "ready" | "error" =
+    productsStatus === "loading" ? "loading" : productsStatus === "error" ? "error" : "ready";
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setStatus("loading");
-      try {
-        const list = await fetchProductList();
-        if (!mounted) return;
-        setData(list);
-        setStatus("ready");
-      } catch {
-        if (!mounted) return;
-        setStatus("error");
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (productsStatus === "idle") loadProducts();
+  }, [productsStatus, loadProducts]);
 
   const sorted = useMemo(() => {
-    const arr = [...data];
+    const arr = [...products];
     switch (sort) {
       case "price_asc":
         arr.sort((a, b) => a.price - b.price);
@@ -51,15 +41,15 @@ export default function ProductList() {
         break;
     }
     return arr;
-  }, [data, sort]);
+  }, [products, sort]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const visible = sorted.slice(start, start + pageSize);
   const handleCardClick = useCallback((id: number) => {
-    window.location.href = `/product/${id}`;
-  }, []);
+    navigate(`/product/${id}`);
+  }, [navigate]);
 
   function changePage(next: number) {
     setPage(Math.max(1, Math.min(totalPages, next)));

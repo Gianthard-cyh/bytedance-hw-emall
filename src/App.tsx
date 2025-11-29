@@ -2,6 +2,8 @@ import NavBar from "@/components/navBar";
 import FilterSelecter from "./components/filterSelector";
 import ProductList from "@/components/productList";
 import ProductDetailPage from "@/pages/productDetail";
+import CartPage from "@/pages/cart";
+import { Routes, Route } from "react-router-dom";
 
 const navItems = [
   { title: "首页", path: "/" },
@@ -24,22 +26,28 @@ const priceConfig = {
 }
 
 function App() {
-  const path = typeof window !== "undefined" ? window.location.pathname : "/";
-  if (/^\/product\/\d+$/.test(path)) {
-    return (
-      <main className="min-h-screen w-full bg-slate-200 flex flex-col">
-        <NavBar items={navItems} />
-        <ProductDetailPage />
-      </main>
-    );
-  }
   return (
     <main className="min-h-screen w-full bg-slate-200 flex flex-col">
       <NavBar items={navItems} />
-      <section className="grid sm:grid-cols-[1fr_2fr] gap-4 p-4">
-        <FilterSelecter classes={classes} priceConfig={priceConfig}/>
-        <ProductList />
-      </section>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <section className="grid sm:grid-cols-[1fr_2fr] gap-4 p-4">
+              <FilterSelecter classes={classes} priceConfig={priceConfig} />
+              <ProductList />
+            </section>
+          }
+        />
+        <Route path="/products" element={
+          <section className="grid sm:grid-cols-[1fr_2fr] gap-4 p-4">
+            <FilterSelecter classes={classes} priceConfig={priceConfig} />
+            <ProductList />
+          </section>
+        } />
+        <Route path="/product/:id" element={<ProductDetailPage />} />
+        <Route path="/cart" element={<CartPage />} />
+      </Routes>
     </main>
   );
 }

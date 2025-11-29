@@ -1,53 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
-import { getProductIdFromPath } from "@/lib/utils";
+import { useParams } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import DetailGallery from "@/components/product/DetailGallery";
 import DetailInfo from "@/components/product/DetailInfo";
 import DetailRecommendations from "@/components/product/DetailRecommendations";
-import { fetchProductDetail, type ProductDetail } from "@/lib/data";
+import { deriveProductDetail, type ProductDetail } from "@/lib/data";
+import { useProductsStore } from "@/store/products";
+import { useCartStore } from "@/store/cart";
 
 // ProductDetail type moved to lib/data
 
 // id parsing moved to utils
 
 export default function ProductDetailPage() {
-  const [status, setStatus] = useState<"loading" | "ready">("loading");
-  const [data, setData] = useState<ProductDetail | null>(null);
   const [activeImg, setActiveImg] = useState(0);
   const [size, setSize] = useState<string>("");
   const [color, setColor] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
+  const getRecommendations = useProductsStore((s) => s.getRecommendations);
+  const addToCart = useCartStore((s) => s.addToCart);
+
+  const products = useProductsStore((s) => s.products);
+  const productsStatus = useProductsStore((s) => s.status);
+  const loadProducts = useProductsStore((s) => s.loadProducts);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setStatus("loading");
-      try {
-        const id = getProductIdFromPath();
-        const result = await fetchProductDetail(id);
-        if (!mounted) return;
-        setData(result);
-        setStatus("ready");
-      } catch {
-        if (!mounted) return;
-        const id = getProductIdFromPath();
-        setData({
-          id,
-          title: `商品标题 ${id}`,
-          price: Math.floor(Math.random() * 2000) + 99,
-          images: Array.from({ length: 5 }).map((_, i) => `https://picsum.photos/seed/${id}-${i}/800/600`),
-          colors: ["黑色", "蓝色", "红色"],
-          sizes: ["S", "M", "L", "XL"],
-          stock: Math.floor(Math.random() * 100),
-          desc: "这是一段示例商品描述，用于展示详情页布局。",
-        });
-        setStatus("ready");
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (productsStatus === "idle") loadProducts();
+  }, [productsStatus, loadProducts]);
+
+  const params = useParams();
+  const id = useMemo(() => Number(params.id ?? 0), [params.id]);
+  const base = products.find((p) => p.id === id);
+  const data: ProductDetail | null = productsStatus === "ready" ? deriveProductDetail(id, base) : null;
+
+  const status: "loading" | "ready" = productsStatus !== "ready" || !data ? "loading" : "ready";
 
   const canAdd = useMemo(() => {
     return !!data && data.stock > 0 && !!size && !!color && qty > 0;
@@ -85,7 +71,10 @@ export default function ProductDetailPage() {
               onSizeChange={setSize}
               onColorChange={setColor}
               onQtyChange={(n) => setQty(n)}
-              onAdd={() => {}}
+              onAdd={() => {
+                if (!data) return;
+                addToCart({ pid: data.id, size, color, qty: Math.max(1, qty) });
+              }}
               canAdd={canAdd}
             />
           )}
@@ -102,20 +91,7 @@ export default function ProductDetailPage() {
           </div>
         )}
         {status === "ready" && data && (
-          <DetailRecommendations
-            items={Array.from({ length: 6 }).map((_, i) => {
-              const base = data.id * 97 + i * 31
-              const price = (base % 2000) + 99
-              const rating = Math.round(((base % 40) / 10 + 1) * 10) / 10
-              return {
-                id: data.id + i + 1,
-                name: `推荐商品 ${i + 1}`,
-                price,
-                rating,
-                image: `https://picsum.photos/seed/${data.id}-rec-${i}/480/360`,
-              }
-            })}
-          />
+          <DetailRecommendations items={getRecommendations(data.id)} />
         )}
       </div>
     </div>

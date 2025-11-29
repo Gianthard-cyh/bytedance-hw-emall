@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StarIcon } from "lucide-react";
 import type { Product } from "@/lib/data";
@@ -39,14 +38,6 @@ export default function ProductCard({ p, onClick }: { p: Product; onClick?: (id:
           </div>
         </div>
       </div>
-      <Button
-        className="w-full h-12 rounded-none"
-        onClick={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        加入购物车
-      </Button>
     </li>
   );
 }
