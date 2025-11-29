@@ -11,7 +11,6 @@ const navItems = [
 ];
 
 const classes = [
-  { title: "全部", path: "/" },
   { title: "手机", path: "/products/phone" },
   { title: "电脑", path: "/products/computer" },
   { title: "平板", path: "/products/tablet" },

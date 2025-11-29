@@ -3,6 +3,7 @@ export type Product = {
   name: string
   price: number
   rating: number
+  image: string
   category: 'phone' | 'computer' | 'tablet'
   images: string[]
   colors: string[]

@@ -65,9 +65,7 @@ export default function FilterSelecter({
   const clampMax = useMemo(() => Math.max(min, max), [min, max]);
 
   function toggle(id: string) {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   function apply() {
@@ -88,12 +86,13 @@ export default function FilterSelecter({
       <div className="bg-white w-full rounded-lg flex flex-col p-4 mt-4 gap-2">
         {classes.map((item, index) => {
           const id = item.key ?? item.path ?? item.title;
+          const checked = selected.includes(id);
           return (
             <FilterClassItem
               key={id + index}
               item={item}
-              checked={selected.includes(id)}
-              onToggle={toggle}
+              checked={checked}
+              onToggle={(sid) => toggle(sid)}
             />
           );
         })}
